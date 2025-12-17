@@ -58,11 +58,22 @@
               :created_at      (:created-at result)}})))
 
 
+
+(defn credit-account [ds]
+  (fn [request]
+    (let [id (get-in request [:path-params :id])
+          body (:body-params request)
+          amount (:amount body)
+          result (account/credit! ds id amount)]
+      {:status 200
+       :body {:id (:id result)
+              :balance (:balance result)}})))
+
 (defn list-clients [ds]
   (fn [_]
     (let [clients (client/list-all ds)
           ;; Formata a lista para Snake Case
-          response (map (fn [c] 
+          response (map (fn [c]
                           {:id (:clients/id c)
                            :name (:clients/name c)
                            :email (:clients/email c)

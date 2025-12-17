@@ -26,8 +26,9 @@
                   ;; A mágica SQL: balance = balance + amount
                   (h/set {:balance [:+ :balance amount]})
                   (h/where [:= :id id])
+                  (h/returning :*)
                   (sql/format))]
-    (jdbc/execute-one! ds query)))
+    (jdbc/execute-one! ds query {:builder-fn rs/as-unqualified-lower-maps})))
 
 (defn list-all [ds]
   (let [query (-> (h/select :*)

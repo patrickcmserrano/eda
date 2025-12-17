@@ -1,4 +1,6 @@
 @baseUrl = http://localhost:8080
+@neoClientId = "318e2e9f-29c9-4c25-9679-0056131f5ad9"
+@morpheusClientId = "d084626b-7288-456e-b7ce-c36c7c4d642c"
 
 ### -------------------------------------------------------
 ### 1. HEALTH CHECK
@@ -45,8 +47,10 @@ POST {{baseUrl}}/accounts
 Content-Type: application/json
 
 {
-    "client_id": "COLE_O_ID_DO_NEO_AQUI"
+    "client_id": {{neoClientId}}
 }
+
+@neoAccountId = f0927c23-ded7-4024-8957-b2decd701987
 
 ### Criar Conta Morpheus
 # Copie o ID do Morpheus da resposta acima e cole abaixo
@@ -54,11 +58,25 @@ POST {{baseUrl}}/accounts
 Content-Type: application/json
 
 {
-    "client_id": "COLE_O_ID_DO_MORPHEUS_AQUI"
+    "client_id": {{morpheusClientId}}
 }
 
+@MorpheusAccountId = 7a60e39c-b601-412d-b1e4-af65fcebde9e
+
 ### Ver Saldo (Conta Neo)
-GET {{baseUrl}}/accounts/COLE_O_ID_DA_CONTA_NEO/balance
+GET {{baseUrl}}/accounts/{{neoAccountId}}/balance
+
+
+### Ver Saldo (Conta Morpheus)
+GET {{baseUrl}}/accounts/{{MorpheusAccountId}}/balance
+
+### Creditar Saldo (Teste)
+POST {{baseUrl}}/accounts/{{neoAccountId}}/credit
+Content-Type: application/json
+
+{
+    "amount": 1000
+}
 
 ### -------------------------------------------------------
 ### 4. TRANSAÇÕES
@@ -70,8 +88,8 @@ POST {{baseUrl}}/transactions
 Content-Type: application/json
 
 {
-    "account_id_from": "COLE_O_ID_DA_CONTA_NEO",
-    "account_id_to": "COLE_O_ID_DA_CONTA_MORPHEUS",
+    "account_id_from": "{{neoAccountId}}",
+    "account_id_to": "{{MorpheusAccountId}}",
     "amount": 100
 }
 
@@ -80,4 +98,4 @@ Content-Type: application/json
 ### -------------------------------------------------------
 
 ### Extrato (Statement) - Histórico da Conta
-GET {{baseUrl}}/accounts/COLE_O_ID_DA_CONTA_NEO/transactions
+GET {{baseUrl}}/accounts/{{neoAccountId}}/transactions

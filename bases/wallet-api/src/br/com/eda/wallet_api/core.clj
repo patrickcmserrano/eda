@@ -30,6 +30,7 @@
                    :get  (h/list-accounts ds)}] ;; <--- NOVO
 
      ["/accounts/:id/balance" {:get (h/get-balance ds)}]
+     ["/accounts/:id/credit"  {:post (h/credit-account ds)}]
 
      ;; Extrato (Transactions History)
      ["/accounts/:id/transactions" {:get (h/get-statement ds)}] ;; <--- NOVO
@@ -48,17 +49,18 @@
 (defn start-server!
   "Inicia o servidor e salva a instância no atom.
    Se join? for false, não bloqueia o REPL."
-  [& {:keys [port join?] :or {port 8080 join? false}}]
+  [& {:keys [port join? db-config kafka-config]
+      :or {port 8080 join? false db-config {} kafka-config {}}}]
 
   (if @server-ref
     (println "⚠️ Servidor já está rodando!")
-    (let [ds (db/get-datasource)
-          kp (kafka/new-producer)
-          ;; Inicia o Jetty
-          instance (jetty/run-jetty (app ds kp) {:port port :join? join?})]
+    (let [ds (db/get-datasource db-config)
+          kp (kafka/new-producer kafka-config)]
 
       (println ">>> Servidor iniciado na porta" port "🚀")
-      (reset! server-ref instance))))
+
+      (let [instance (jetty/run-jetty (app ds kp) {:port port :join? join?})]
+        (reset! server-ref instance)))))
 
 ;; --- nREPL ---
 
@@ -95,7 +97,18 @@
 
 ;; --- Entrypoint (Docker/Produção) ---
 
-(defn -main [& args]
-  (start-nrepl!)
-  ;; Em produção, queremos join? true para manter o container vivo
-  (start-server! :join? true))
+(defn -main [& _args]
+  (let [db-config {:host     (System/getenv "DB_HOST")
+                   :port     (some-> (System/getenv "DB_PORT") (Integer/parseInt))
+                   :user     (System/getenv "DB_USER")
+                   :password (System/getenv "DB_PASS")
+                   :dbname   (System/getenv "DB_NAME")}
+        kafka-config {:bootstrap-servers (System/getenv "KAFKA_BOOTSTRAP_SERVERS")}
+        port (some-> (System/getenv "APP_PORT") (Integer/parseInt))]
+
+    (start-nrepl!)
+    ;; Em produção, queremos join? true para manter o container vivo
+    (start-server! :join? true
+                   :port (or port 8080)
+                   :db-config db-config
+                   :kafka-config kafka-config)))

@@ -25,30 +25,33 @@
     (throw (ex-info "Dados inválidos" {:errors (me/humanize (m/explain CreateTransactionInput input))}))
 
     (let [tx-id   (str (UUID/randomUUID))
-          ;; --- A CORREÇÃO AQUI ---
-          ;; Convertemos Instant -> Timestamp (JDBC entende isso)
           now     (Timestamp/from (java.time.Instant/now))
+          tx-data (assoc input :id tx-id :created-at now)
 
-          tx-data (assoc input :id tx-id :created-at now)]
+          result (jdbc/with-transaction [tx datasource]
+                   (let [acc-from-id (:account-id-from input)
+                         acc-to-id   (:account-id-to input)
+                         amount      (:amount input)]
 
-      (jdbc/with-transaction [tx datasource]
-        (let [acc-from-id (:account-id-from input)
-              acc-to-id   (:account-id-to input)
-              amount      (:amount input)]
+                     (let [account-from (account/find-by-id tx acc-from-id)]
+                       (if (< (:balance account-from) amount)
+                         (throw (ex-info "Saldo insuficiente"
+                                         {:status   422
+                                          :current  (:balance account-from)
+                                          :required amount}))
+                         (let [updated-from (account/debit! tx acc-from-id amount)
+                               updated-to   (account/credit! tx acc-to-id amount)]
+                           (db/insert-transaction! tx tx-data)
+                           {:tx-data        tx-data
+                            :balance-update {:account-id-from acc-from-id
+                                             :balance-from    (:balance updated-from)
+                                             :account-id-to   acc-to-id
+                                             :balance-to      (:balance updated-to)}})))))]
 
-          (let [account-from (account/find-by-id tx acc-from-id)]
-            (if (< (:balance account-from) amount)
-              (throw (ex-info "Saldo insuficiente"
-                              {:status   422
-                               :current  (:balance account-from)
-                               :required amount}))
-              (do
-                (account/debit! tx acc-from-id amount)
-                (account/credit! tx acc-to-id amount)
-                (db/insert-transaction! tx tx-data))))))
+      (kafka/produce! kafka-producer "transactions" {:event-name "TransactionCreated"
+                                                     :payload    (:tx-data result)})
 
-      (let [kafka-event {:event-name "TransactionCreated"
-                         :payload    tx-data}]
-        (kafka/produce! kafka-producer "transactions" kafka-event))
+      (kafka/produce! kafka-producer "balances" {:event-name "BalanceUpdated"
+                                                 :payload    (:balance-update result)})
 
-      tx-data)))
+      (:tx-data result))))
