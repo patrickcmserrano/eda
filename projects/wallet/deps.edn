@@ -4,14 +4,14 @@
          br.com.eda/wallet-api          {:local/root "../../bases/wallet-api"}
          br.com.eda/event-processor     {:local/root "../../bases/event-processor"}
 
-        ;; --- Componentes de D1omínio ---
+         ;; --- Componentes de D1omínio ---
          br.com.eda/account             {:local/root "../../components/account"}
          br.com.eda/client              {:local/root "../../components/client"}
          br.com.eda/transaction         {:local/root "../../components/transaction"}
 
-        ;; --- Componentes de Infra ---
+         ;; --- Componentes de Infra ---
          br.com.eda/database            {:local/root "../../components/database"}
          br.com.eda/kafka               {:local/root "../../components/kafka"}
 
-        ;; --- Libs de Runtime (Logging) ---
+         ;; --- Libs de Runtime (Logging) ---
          ch.qos.logback/logback-classic {:mvn/version "1.4.11"}}}
