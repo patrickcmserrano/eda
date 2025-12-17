@@ -28,3 +28,9 @@
                   (h/where [:= :id id])
                   (sql/format))]
     (jdbc/execute-one! ds query)))
+
+(defn list-all [ds]
+  (let [query (-> (h/select :*)
+                  (h/from :accounts)
+                  (sql/format))]
+    (jdbc/execute! ds query)))

@@ -1,5 +1,6 @@
 (ns br.com.eda.account.interface
-  (:require [br.com.eda.account.core :as core]))
+  (:require [br.com.eda.account.core :as core]
+            [br.com.eda.account.db :as db]))
 
 (defn create-account! [ds input]
   (core/create-account! ds input))
@@ -12,3 +13,6 @@
 
 (defn debit! [ds id amount]
   (core/debit! ds id amount))
+
+(defn list-all [ds]
+  (db/list-all ds))

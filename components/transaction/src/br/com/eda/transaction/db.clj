@@ -10,3 +10,15 @@
                   (h/values [transaction-data])
                   (sql/format))]
     (jdbc/execute-one! tx query)))
+
+(defn get-statement
+  "Busca transações onde a conta participou (seja enviando ou recebendo)."
+  [ds account-id]
+  (let [query (-> (h/select :*)
+                  (h/from :transactions)
+                  (h/where [:or
+                            [:= :account_id_from account-id]
+                            [:= :account_id_to account-id]])
+                  (h/order-by [:created_at :desc]) ;; Mais recentes primeiro
+                  (sql/format))]
+    (jdbc/execute! ds query)))

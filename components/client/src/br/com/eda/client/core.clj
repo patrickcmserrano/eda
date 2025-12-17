@@ -30,8 +30,5 @@
     ;; 2. Preparação (Gerar ID)
     (let [new-client (assoc input :id (str (UUID/randomUUID)))]
 
-      ;; 3. Persistência
-      (db/insert-client! ds new-client)
-
-      ;; 4. Retorno
-      new-client)))
+      ;; 3. Persistência & 4. Retorno
+      (db/insert-client! ds new-client))))
