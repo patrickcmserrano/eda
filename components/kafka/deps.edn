@@ -1,10 +1,13 @@
-{:paths ["src" "resources"]
+{:paths     ["src" "resources"]
  :mvn/repos {"confluent" {:url "https://packages.confluent.io/maven/"}}
- :deps {;; Cliente Kafka Wrapper
-        fundingcircle/jackdaw {:mvn/version "0.9.12"}
+ :deps      {;; Cliente Kafka Wrapper
+             fundingcircle/jackdaw                     {:mvn/version "0.9.12"}
 
-        ;; JSON rápido
-        metosin/jsonista      {:mvn/version "0.3.7"}
+             ;; JSON rápido
+             metosin/jsonista                          {:mvn/version "0.3.7"}
 
-        ;; Logging
-        org.slf4j/slf4j-api   {:mvn/version "2.0.7"}}}
+             ;; Testes
+             org.apache.kafka/kafka-streams-test-utils {:mvn/version "3.3.2"}
+
+             ;; Logging
+             org.slf4j/slf4j-api                       {:mvn/version "2.0.7"}}}
