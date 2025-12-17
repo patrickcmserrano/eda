@@ -1,0 +1,83 @@
+@baseUrl = http://localhost:8080
+
+### -------------------------------------------------------
+### 1. HEALTH CHECK
+### -------------------------------------------------------
+GET {{baseUrl}}/health
+
+### -------------------------------------------------------
+### 2. CLIENTES
+### -------------------------------------------------------
+
+### Listar todos os clientes
+GET {{baseUrl}}/clients
+
+### Criar Cliente 1 (Neo)
+# @name createNeo
+POST {{baseUrl}}/clients
+Content-Type: application/json
+
+{
+    "name": "Neo",
+    "email": "neo@matrix.com"
+}
+
+### Criar Cliente 2 (Morpheus)
+# @name createMorpheus
+POST {{baseUrl}}/clients
+Content-Type: application/json
+
+{
+    "name": "Morpheus",
+    "email": "morpheus@matrix.com"
+}
+
+### -------------------------------------------------------
+### 3. CONTAS
+### -------------------------------------------------------
+
+### Listar todas as contas
+GET {{baseUrl}}/accounts
+
+### Criar Conta Neo
+# Copie o ID do Neo da resposta acima e cole abaixo
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+    "client_id": "COLE_O_ID_DO_NEO_AQUI"
+}
+
+### Criar Conta Morpheus
+# Copie o ID do Morpheus da resposta acima e cole abaixo
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+    "client_id": "COLE_O_ID_DO_MORPHEUS_AQUI"
+}
+
+### Ver Saldo (Conta Neo)
+GET {{baseUrl}}/accounts/COLE_O_ID_DA_CONTA_NEO/balance
+
+### -------------------------------------------------------
+### 4. TRANSAÇÕES
+### -------------------------------------------------------
+
+### Realizar Transferência (Neo -> Morpheus)
+# Lembre-se: Neo precisa ter saldo (credite via REPL se precisar)
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+    "account_id_from": "COLE_O_ID_DA_CONTA_NEO",
+    "account_id_to": "COLE_O_ID_DA_CONTA_MORPHEUS",
+    "amount": 100
+}
+
+### -------------------------------------------------------
+### 5. RELATÓRIOS
+### -------------------------------------------------------
+
+### Extrato (Statement) - Histórico da Conta
+GET {{baseUrl}}/accounts/COLE_O_ID_DA_CONTA_NEO/transactions
