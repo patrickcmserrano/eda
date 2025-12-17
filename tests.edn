@@ -1,0 +1,14 @@
+#kaocha/v1
+ {:tests   [{:id           :unit
+             :test-paths   ["components/account/test"]
+             :source-paths ["components/account/src"
+                            "components/database/src"
+                            "components/client/src"
+                            "components/transaction/src"
+                            "components/kafka/src"]
+             :ns-patterns  ["-test$"]}]
+
+  :plugins [:kaocha.plugin/filter
+            :kaocha.plugin/capture-output]
+
+  :color?  true}
