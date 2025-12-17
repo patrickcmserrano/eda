@@ -1,3 +1,4 @@
 {:paths ["src" "resources"]
- :deps {;; Gerenciamento de ciclo de vida
-        integrant/integrant {:mvn/version "0.8.1"}}}
+ :deps {br.com.eda/kafka     {:local/root "../../components/kafka"}
+        metosin/jsonista     {:mvn/version "0.3.7"}
+        org.slf4j/slf4j-simple {:mvn/version "2.0.7"}}} ;; Logger simples
