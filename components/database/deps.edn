@@ -1,0 +1,9 @@
+{:paths ["src" "resources"]
+ :deps {;; Driver Postgres
+        org.postgresql/postgresql         {:mvn/version "42.6.0"}
+        ;; Camada JDBC moderna
+        com.github.seancorfield/next.jdbc {:mvn/version "1.3.883"}
+        ;; Connection Pool (Essencial para prod)
+        com.zaxxer/HikariCP               {:mvn/version "5.0.1"}
+        ;; SQL como dados (Query Builder)
+        com.github.seancorfield/honeysql  {:mvn/version "2.4.1045"}}}

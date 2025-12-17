@@ -1,0 +1,9 @@
+{:paths ["src" "resources"]
+ :deps {;; Servidor Web (Jetty adapter)
+        ring/ring-jetty-adapter {:mvn/version "1.9.5"}
+        ;; Roteamento e Coerção
+        metosin/reitit          {:mvn/version "0.7.0-alpha7"}
+        ;; Content Negotiation (JSON <-> EDN automaticamente)
+        metosin/muuntaja        {:mvn/version "0.6.8"}
+        ;; Gerenciamento de ciclo de vida (Inicia/Para servidor)
+        integrant/integrant     {:mvn/version "0.8.1"}}}

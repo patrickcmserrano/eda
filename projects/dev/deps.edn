@@ -1,0 +1,8 @@
+{:paths     ["src" "resources"]
+ :mvn/repos {"confluent" {:url "https://packages.confluent.io/maven/"}}
+ :deps      {;; Importa tudo do projeto principal
+             br.com.eda/wallet           {:local/root "../wallet"}
+
+        ;; Ferramentas extras de Dev
+             org.clojure/tools.namespace {:mvn/version "1.4.4"}
+             integrant/repl              {:mvn/version "0.3.3"}}}

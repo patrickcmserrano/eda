@@ -1,0 +1,21 @@
+;; deps.edn
+{:paths   []
+ :deps    {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :mvn/repos {"central"   {:url "https://repo1.maven.org/maven2/"}
+             "clojars"   {:url "https://repo.clojars.org/"}
+             "confluent" {:url "https://packages.confluent.io/maven/"}}
+ :aliases {:poly ;; Alias para rodar a ferramenta Polylith
+           {:extra-deps {polylith/clj-poly {:mvn/version "0.2.19"}}
+            :main-opts  ["-m" "polylith.clj.core.poly-cli.core"]}
+
+           :test ;; Alias para rodar testes em todo o workspace
+           {:extra-paths ["test"]
+            :extra-deps  {org.clojure/test.check {:mvn/version "1.1.1"}
+                          lambdaisland/kaocha    {:mvn/version "1.87.1366"}}
+            :main-opts   ["-m" "kaocha.runner"]}
+
+           :dev  ;; Alias para ambiente de desenvolvimento
+           {:extra-deps {nrepl/nrepl       {:mvn/version "1.5.1"}
+                         cider/cider-nrepl {:mvn/version "0.58.0"}}
+            :main-opts  ["-m" "nrepl.cmdline"
+                         "--middleware" "[cider.nrepl/cider-middleware]"]}}}

@@ -1,0 +1,8 @@
+;; workspace.edn
+{:top-namespace   "br.com.eda" ;; Seu namespace base
+ :interface-ns    "interface"   ;; O nome do arquivo que expõe o componente
+ :projects-dir    "projects"
+ :components-dir  "components"
+ :bases-dir       "bases"
+ :default-profile "default"
+ :projects        {"wallet" {:path "projects/wallet"}}}

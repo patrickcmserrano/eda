@@ -1,0 +1,25 @@
+# Clojure
+.cpcache/
+.nrepl-port
+classes/
+target/
+lib/
+
+# LSP / Analysis
+.lsp/
+.clj-kondo/.cache/
+
+# Editors
+.calva/
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker / Local Data
+.docker/postgres-data/
+postgres-data/
+*.log
