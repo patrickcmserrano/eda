@@ -8,12 +8,12 @@
 
 (def CreateAccountInput
   [:map
-   [:client_id :string]]) ;; Snake_case pois vem do JSON da API assim
+   [:client-id :string]]) ;; Snake_case pois vem do JSON da API assim
 
 (def Account
   [:map
    [:id :string]
-   [:client_id :string]
+   [:client-id :string]
    [:balance :int]]) ;; Sempre use inteiros (centavos) para dinheiro!
 
 ;; --- Lógica ---
@@ -26,16 +26,16 @@
 
     ;; 2. Preparação
     (let [new-account {:id        (str (UUID/randomUUID))
-                       :client_id (:client_id input)
+                       :client-id (:client-id input)
                        :balance   0}] ;; Começa zerada
 
-      ;; 3. Persistência (Pode falhar se client_id não existir no banco)
+      ;; 3. Persistência (Pode falhar se client-id não existir no banco)
       (try
         (db/insert-account! ds new-account)
         new-account
         (catch Exception e
           ;; Captura erro de chave estrangeira do Postgres
-          (throw (ex-info "Erro ao criar conta. Verifique se o client_id existe."
+          (throw (ex-info "Erro ao criar conta. Verifique se o client-id existe."
                           {:cause (.getMessage e)})))))))
 
 (defn find-by-id [ds id]

@@ -18,11 +18,11 @@
             client-id (:id client)]
 
         ;; 2. Ação: Criar Conta
-        (let [acc (account/create-account! ds {:client_id client-id})]
+        (let [acc (account/create-account! ds {:client-id client-id})]
 
           ;; 3. Asserções (Verificações)
           (is (some? (:id acc)) "A conta deve ter um ID gerado")
-          (is (= client-id (:client_id acc)) "A conta deve pertencer ao cliente correto")
+          (is (= client-id (:client-id acc)) "A conta deve pertencer ao cliente correto")
           (is (= 0 (:balance acc)) "O saldo inicial deve ser zero")
 
           ;; Teste aninhado: Movimentação
@@ -37,6 +37,6 @@
 
 (deftest validation-test
   (let [ds (test-ds)]
-    (testing "Não deve criar conta sem client_id"
+    (testing "Não deve criar conta sem client-id"
       (is (thrown? clojure.lang.ExceptionInfo
                    (account/create-account! ds {}))))))
