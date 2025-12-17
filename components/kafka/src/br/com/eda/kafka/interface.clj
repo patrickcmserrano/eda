@@ -11,3 +11,12 @@
   "Envia um mapa Clojure como JSON para o tópico especificado."
   [producer topic payload]
   (core/produce! producer topic payload))
+
+(defn new-consumer [config group-id]
+  (core/new-consumer config group-id))
+
+(defn subscribe! [consumer topic-name]
+  (core/subscribe! consumer topic-name))
+
+(defn poll! [consumer timeout-ms]
+  (core/poll! consumer timeout-ms))
