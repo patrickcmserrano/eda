@@ -1,12 +1,12 @@
 # Wallet Core (EDA Study)
 
-Este projeto é uma implementação de um núcleo de transações financeiras (Wallet Core) baseada em Arquitetura Orientada a Eventos (EDA).
+Eu desenvolvi este projeto como uma implementação de um núcleo de transações financeiras (Wallet Core) baseada em Arquitetura Orientada a Eventos (EDA).
 
-Foi desenvolvido como parte do desafio do curso Full Cycle, mas utilizando uma stack moderna e funcional com **Clojure** e **Polylith**, focando em imutabilidade, modularidade e separation of concerns.
+Ele nasceu como parte do desafio do curso Full Cycle, mas eu decidi utilizar uma stack moderna e funcional com **Clojure** e **Polylith**, focando em imutabilidade, modularidade e separation of concerns.
 
 ## 🏗 Arquitetura & Stack
 
-O projeto segue uma estrutura de Monorepo modular gerenciada pelo **Polylith**:
+Eu estruturei o projeto como um Monorepo modular gerenciado pelo **Polylith**:
 
 * **Linguagem:** Clojure (JDK 17+)
 * **Gerenciamento de Workspace:** Polylith (`poly`)
@@ -70,7 +70,7 @@ A API estará disponível em: `http://localhost:8080`
 
 ## 🧪 Testando a API
 
-Para facilitar os testes, você pode usar o arquivo `requests.http` (requer extensão **REST Client**) ou utilizar os comandos `curl` abaixo.
+Para facilitar os testes, eu preparei o arquivo `requests.http` (requer extensão **REST Client**), mas você também pode utilizar os comandos `curl` abaixo.
 
 ### 1. Health Check
 Verifica se a API está online.
@@ -146,10 +146,10 @@ clojure -M:poly check
 
 ---
 
-## ⚠️ Trade-offs e Melhorias Futuras
+## ⚠️ Trade-offs e Melhorias que Eu Planejo
 
 ### Consistência de Dados (The Dual Write Problem)
-A implementação atual do componente `Transaction` utiliza uma abordagem pragmática para o escopo deste exercício:
+Na minha implementação atual do componente `Transaction`, eu utilizei uma abordagem pragmática para o escopo deste exercício:
 1. Commit da transação no PostgreSQL (Atomicidade garantida via `jdbc/with-transaction`).
 2. Publicação do evento no Kafka (Fire and forget).
 
@@ -170,7 +170,7 @@ Para evoluir este projeto para um ambiente crítico, a solução recomendada ser
 
 ### 📊 O Fluxo de Sequência (Passo a Passo)
 
-Este diagrama mostra exatamente o que acontece desde o momento em que o usuário chama a API até o Worker processar o evento.
+Neste diagrama, eu mostro exatamente o que acontece desde o momento em que o usuário chama a API até o Worker processar o evento.
 
 ```mermaid
 sequenceDiagram
@@ -218,7 +218,7 @@ sequenceDiagram
 
 ### 📝 Detalhando as Etapas
 
-Aqui está o que acontece em cada fase numerada no diagrama:
+Aqui eu explico o que acontece em cada fase numerada no diagrama:
 
 #### 1. A Solicitação (Síncrono)
 
@@ -229,7 +229,7 @@ O cliente (pode ser um App Mobile, Frontend ou Postman) envia o JSON pedindo a t
 
 #### 2. O Coração do Sistema (ACID)
 
-É aqui que a mágica acontece. Usamos `jdbc/with-transaction` para garantir a integridade financeira.
+É aqui que a mágica acontece. Eu usei `jdbc/with-transaction` para garantir a integridade financeira.
 
 * **Onde:** `components/transaction`.
 * **Ação:** O dinheiro sai de A e vai para B matematicamente.
@@ -239,7 +239,7 @@ O cliente (pode ser um App Mobile, Frontend ou Postman) envia o JSON pedindo a t
 
 Imediatamente após o banco confirmar "OK, gravei", a API avisa o Kafka.
 
-* **Ação:** Publicamos no tópico `transactions`.
+* **Ação:** Eu publico as mensagens no tópico `transactions`.
 * **Performance:** Note que a API responde `201 Created` para o usuário **antes** do Worker fazer qualquer coisa. Isso faz a API ser extremamente rápida (milissegundos), pois ela não espera o processamento pesado.
 
 #### 4. O Trabalho Pesado (Assíncrono)
@@ -248,17 +248,17 @@ Em um universo paralelo (outro processo, outro container), o Worker acorda.
 
 * **Onde:** `bases/event-processor`.
 * **Ação:** Ele vê que chegou uma mensagem.
-* **Efeito:** No nosso caso, ele imprime os logs. No mundo real, ele enviaria e-mails, notificaria o banco central, atualizaria relatórios de BI, etc.
+* **Efeito:** No meu caso, ele apenas imprime os logs. No mundo real, ele enviaria e-mails, notificaria o banco central, atualizaria relatórios de BI, etc.
 
-### Por que separamos assim?
+### Por que eu escolhi separar assim?
 
 Se o passo **4 (Worker)** falhar (ex: serviço de e-mail fora do ar), a transação **não é cancelada**. O dinheiro já foi transferido no passo **2**. O Worker apenas tenta processar o evento novamente mais tarde. Isso torna o sistema muito mais resiliente a falhas externas.
 
 ---
 
-Para transformar o nosso projeto acadêmico `eda-study` em uma arquitetura de **Fintech Real ("Battle-Tested")**, precisamos endereçar problemas que só aparecem em escala e com dinheiro de verdade em jogo: **Fraude, Consistência Eventual, Latência e Escalabilidade de Leitura.**
+Para transformar meu projeto acadêmico `eda-study` em uma arquitetura de **Fintech Real ("Battle-Tested")**, eu precisaria endereçar problemas que só aparecem em escala e com dinheiro de verdade em jogo: **Fraude, Consistência Eventual, Latência e Escalabilidade de Leitura.**
 
-Aqui está a ilustração de como esse sistema evoluiria na vida real.
+Abaixo, eu ilustro como esse sistema evoluiria na vida real.
 
 ### 🏛 A Arquitetura Fintech Realista (CQRS + Event Sourcing + Sagas)
 
@@ -312,20 +312,20 @@ graph TD
 
 ---
 
-### 🧠 Deep Dive: Questões de Engenharia e Arquitetura
+### 🧠 Deep Dive: Minhas Reflexões sobre Engenharia e Arquitetura
 
-Vamos detalhar as camadas adicionadas e por que elas são obrigatórias numa Fintech real.
+Vou detalhar as camadas que eu adicionaria e por que elas são obrigatórias numa Fintech real.
 
 #### 1. A Entrada: Idempotência e Rate Limiting
 
-No nosso código, se o usuário clicar 2 vezes no botão "Transferir", o dinheiro sai 2 vezes.
+No meu código atual, se o usuário clicar 2 vezes no botão "Transferir", o dinheiro sai 2 vezes.
 
 * **Realidade:** O App envia um Header `Idempotency-Key` (um UUID gerado no celular).
 * **Engenharia:** A API verifica no Redis se essa chave já foi processada. Se sim, retorna o resultado anterior cacheado, sem tocar no Postgres. Isso evita **Double Spending** em redes instáveis.
 
 #### 2. O Core: Transactional Outbox (CDC)
 
-Como discutimos, o código atual tem o risco de escrever no banco e falhar no Kafka.
+Como eu mencionei antes, o código atual tem o risco de escrever no banco e falhar no Kafka.
 
 * **Realidade:** Usamos **CDC (Change Data Capture)**. Ferramentas como **Debezium** leem o log binário do Postgres (WAL) e garantem que *cada linha inserida no banco vire um evento no Kafka*.
 * **Benefício:** Zero perda de dados. O banco é a fonte da verdade, o Kafka é o reflexo fiel.
@@ -345,7 +345,7 @@ E se a transferência for aprovada pelo banco, mas o Worker de Fraude (`Fraud`) 
 
 #### 4. A Visão: CQRS (Command Query Responsibility Segregation)
 
-No nosso código, usamos `h/select` na mesma tabela `transactions` que recebe escritas.
+No meu código atual, eu uso `h/select` na mesma tabela `transactions` que recebe escritas.
 
 * **O Problema:** Num dia de pagamento (dia 5), milhões de pessoas abrem o app para ver o saldo (Leitura), travando o banco para quem quer transferir (Escrita).
 * **Realidade:** Separamos leitura e escrita.
@@ -357,20 +357,20 @@ No nosso código, usamos `h/select` na mesma tabela `transactions` que recebe es
 
 #### 5. O Livro Razão: Ledger Imutável
 
-A tabela `transactions` do nosso projeto é mutável. Numa fintech, contadores precisam de um histórico que prova que o saldo de A + B é igual ao total de dinheiro no banco.
+A tabela `transactions` do meu projeto é mutável. Numa fintech, contadores precisam de um histórico que prova que o saldo de A + B é igual ao total de dinheiro no banco.
 
 * **Realidade:** O Worker `Ledger` grava num banco específico (como **Datomic** ou **XTDB** em Clojure) que suporta auditoria temporal e imutabilidade criptográfica.
 
 ---
 
-### 🧪 Como o Clojure brilha aqui?
+### 🧪 Por que eu escolhi o Clojure?
 
-A stack que você escolheu (**Clojure + Kafka**) é a "Arma Secreta" do Nubank e outras gigantes. Por quê?
+A stack que eu escolhi (**Clojure + Kafka**) é a "Arma Secreta" do Nubank e outras gigantes. Vou explicar por quê:
 
 1. **Imutabilidade por Padrão:** Em sistemas concorrentes (milhares de transações/segundo), não ter que lidar com objetos mudando de estado na memória evita uma classe inteira de bugs.
 2. **EDN (Extensible Data Notation):** O Clojure trafega dados como mapas. Diferente do Java (que precisa converter JSON -> Objeto -> DTO -> DAO), o Clojure processa o dado "nu e cru" dos Workers de forma extremamente performática.
 3. **Datomic/XTDB:** Bancos de dados feitos em Clojure que resolvem o problema de auditoria nativamente.
 
-**Resumo da Evolução:**
-Seu projeto atual é o **"MVP Funcional"**.
+**Resumo da Evolução do meu projeto:**
+Meu projeto atual é o **"MVP Funcional"**.
 A versão Fintech Real adiciona: **Idempotência (Segurança)**, **CDC (Consistência)**, **Sagas (Reversão)** e **CQRS (Escalabilidade)**.
