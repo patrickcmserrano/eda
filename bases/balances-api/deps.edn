@@ -1,0 +1,8 @@
+{:paths ["src" "resources"]
+ :deps  {metosin/reitit          {:mvn/version "0.7.0-alpha7"}
+         ring/ring-jetty-adapter {:mvn/version "1.9.5"}
+         metosin/muuntaja        {:mvn/version "0.6.8"}
+         metosin/jsonista        {:mvn/version "0.3.7"}
+         br.com.eda/balance      {:local/root "../../components/balance"}
+         br.com.eda/kafka        {:local/root "../../components/kafka"}
+         br.com.eda/database     {:local/root "../../components/database"}}}

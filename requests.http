@@ -99,3 +99,15 @@ Content-Type: application/json
 
 ### Extrato (Statement) - Histórico da Conta
 GET {{baseUrl}}/accounts/{{neoAccountId}}/transactions
+
+
+### -------------------------------------------------------
+### 6. BALANCES SERVICE (NOVO)
+### -------------------------------------------------------
+@balanceUrl = http://localhost:3003
+
+### Consultar Saldo no Microsserviço de Balances (Neo)
+GET {{balanceUrl}}/balances/{{neoAccountId}}
+
+### Consultar Saldo no Microsserviço de Balances (Morpheus)
+GET {{balanceUrl}}/balances/{{MorpheusAccountId}}

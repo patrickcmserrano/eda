@@ -17,20 +17,47 @@ Eu estruturei o projeto como um Monorepo modular gerenciado pelo **Polylith**:
 
 ### Estrutura do Workspace
 
+
 ```text
 bases/
   └── wallet-api/       # API Gateway (REST -> Componentes)
+  └── balances-api/     # API Balance (REST + Kafka Consumer) [NOVO]
   └── event-processor/  # Worker (Processamento Assíncrono)
 components/
   ├── account/          # Domínio de Contas e Saldo
+  ├── balance/          # Domínio de Leitura de Saldos (CQRS Projection) [NOVO]
   ├── client/           # Domínio de Clientes
   ├── transaction/      # Core: Atomicidade e Orquestração
   ├── database/         # Infra: Connection Pool e Migrations
   └── kafka/            # Infra: Producers
 projects/
-  └── wallet/           # Artefato Deployável (Uberjar)
-
+  └── wallet/           # Artefato Deployável (Wallet Core)
+  └── balances/         # Artefato Deployável (Balances Service) [NOVO]
 ```
+
+## ✅ Conformidade e Integridade do Sistema
+
+Este projeto foi desenvolvido não apenas como uma resposta aos diffs do desafio, mas como um sistema completo e resiliente que garante a integridade dos dados através de uma arquitetura orientada a eventos.
+
+### Requisitos Atendidos
+
+| Requisito | Implementação e Garantia de Integridade |
+| :--- | :--- |
+| **Microsserviço Independente** | O serviço de `Balances` é um projeto Polylith isolado, com seu próprio ciclo de vida, banco de dados e porta (**3003**), garantindo o desacoplamento físico e lógico. |
+| **Consistência Eventual** | A integridade entre o `Wallet Core` e o `Balances` é mantida via Kafka. O fluxo garante que qualquer alteração de saldo no Core seja propagada de forma assíncrona e confiável. |
+| **Persistência de Balances** | Diferente de uma simples cache, o Balances possui seu próprio banco PostgreSQL (`balances-db`), permitindo consultas históricas e recuperação de estado independentemente da Wallet. |
+| **Automação Total (Seed & Migrations)** | O sistema é "zero touch". Ao subir o Docker, as migrations do Wallet e do Balances rodam em paralelo, e o Wallet popula dados iniciais (Seed) que fluem automaticamente até o Balances via eventos. |
+| **Contrato de Dados** | A estrutura de mensagens no Kafka segue um padrão estrito, garantindo que o consumidor de Balances processe apenas informações válidas para atualização de saldo. |
+| **Documentação Viva** | O arquivo `requests.http` foi estendido para incluir testes de ponta a ponta que validam a integridade do fluxo desde a transação até a consulta no novo microsserviço. |
+
+### Fluxo de Integridade de Ponta a Ponta
+1. **Wallet Core** executa uma transação ACID no Postgres.
+2. Um evento `BalanceUpdated` é emitido com o **estado final** do saldo.
+3. O **Balances Service** consome o evento e realiza um `upsert` atômico no seu banco.
+4. O usuário consulta `GET /balances/{id}` e recebe o dado projetado e persistido especificamente para leitura.
+
+---
+
 
 ## 🚀 Como Rodar
 
@@ -40,33 +67,39 @@ projects/
 * Clojure CLI
 * Ferramenta `poly` (opcional, mas recomendada)
 
-### 1. Subir Infraestrutura
+### 1. Subir Toda a Aplicação (Docker)
 
-Inicie o PostgreSQL, Zookeeper e Kafka:
+Para rodar todos os microsserviços (Wallet Core + Balances + Infra) de uma vez:
 
 ```bash
 docker compose up -d
-
 ```
 
-### 2. Rodar a Aplicação (Modo Dev)
+**O que acontece automaticamente:**
+1. Os containers sobem (Postgres, Kafka, Zookeeper, Wallet, Balances).
+2. O **Wallet Core** detecta que o banco está vazio e roda o **Seed Automático**.
+   - Cria Clientes e Contas.
+   - Faz transações que geram eventos.
+3. O **Balances Service** recebe os eventos e atualiza seu próprio banco.
 
-Você pode rodar diretamente via Clojure CLI a partir do projeto `wallet`:
+### 2. Rodar Localmente (Modo Desenvolvimento)
 
+Se você quiser rodar um dos serviços via terminal (REPL):
+
+**Wallet Core:**
 ```bash
 cd projects/wallet
 clojure -M -m br.com.eda.wallet-api.core
-
 ```
 
-Ou, se preferir rodar tudo via Docker (Build Final):
-
+**Balances Service:**
 ```bash
-docker compose up --build app
-
+cd projects/balances
+clojure -M -m br.com.eda.balances-api.core
 ```
 
-A API estará disponível em: `http://localhost:8080`
+A API do **Wallet** estará disponível em: `http://localhost:8080`
+A API do **Balances** estará disponível em: `http://localhost:3003`
 
 ## 🧪 Testando a API
 
@@ -128,6 +161,14 @@ curl -X POST http://localhost:8080/transactions \
 curl -X GET http://localhost:8080/accounts/UUID_DA_CONTA/transactions
 ```
 
+### 5. Balances Service (Microsserviço Novo)
+#### Consultar Saldo
+Este endpoint consulta o banco de dados exclusivo do serviço de Balances.
+```bash
+curl -X GET http://localhost:3003/balances/UUID_DA_CONTA
+# Exemplo de resposta: {"account_id":"...","balance":100,"updated_at":"..."}
+```
+
 ## 🛠 Desenvolvimento
 
 Para rodar os testes de todos os componentes:
@@ -177,9 +218,10 @@ sequenceDiagram
     autonumber
     participant U as Usuário (HTTP)
     participant API as Wallet API (App)
-    participant DB as PostgreSQL
-    participant K as Kafka (Broker)
-    participant W as Worker (Processor)
+    participant DB as Postgres (Wallet)
+    participant K as Kafka
+    participant B as Balances Service
+    participant DB2 as Postgres (Balances)
 
     Note over U, API: 1. Início da Requisição
     U->>API: POST /transactions
@@ -189,29 +231,27 @@ sequenceDiagram
     Note over API, DB: 2. Unit of Work (Atômico)
     API->>DB: BEGIN TRANSACTION
     activate DB
-    API->>DB: Busca Conta Origem (Check Saldo)
     API->>DB: Debita Conta Origem
     API->>DB: Credita Conta Destino
-    API->>DB: Insere Histórico
     API->>DB: COMMIT
     deactivate DB
     
     Note over API, K: 3. Notificação (Fire & Forget)
-    API->>K: Produce "TransactionCreated"
+    API->>K: Produce "BalanceUpdated"
     
     API-->>U: 201 Created (Transação Concluída)
     deactivate API
     
-    Note over K, W: 4. Processamento Assíncrono
-    loop Polling Infinito
-        W->>K: Poll (Novas mensagens?)
-        K-->>W: Evento: {Payload: ...}
+    Note over K, B: 4. Processamento Assíncrono (Event Driven)
+    loop Polling
+        B->>K: Poll (Novas mensagens?)
+        K-->>B: Evento: {Payload: ...}
     end
     
-    activate W
-    W->>W: Processa Evento (Log, Email, etc)
-    deactivate W
-
+    activate B
+    Note over B, DB2: 5. Atualização de Leitura
+    B->>DB2: Upsert Balance (Novo Saldo)
+    deactivate B
 ```
 
 ---
@@ -239,20 +279,19 @@ O cliente (pode ser um App Mobile, Frontend ou Postman) envia o JSON pedindo a t
 
 Imediatamente após o banco confirmar "OK, gravei", a API avisa o Kafka.
 
-* **Ação:** Eu publico as mensagens no tópico `transactions`.
-* **Performance:** Note que a API responde `201 Created` para o usuário **antes** do Worker fazer qualquer coisa. Isso faz a API ser extremamente rápida (milissegundos), pois ela não espera o processamento pesado.
+#### 4. O Microsserviço de Balances (Consumidor)
 
-#### 4. O Trabalho Pesado (Assíncrono)
+Em um container separado, o **Balances Service** acorda ao receber o evento.
 
-Em um universo paralelo (outro processo, outro container), o Worker acorda.
-
-* **Onde:** `bases/event-processor`.
-* **Ação:** Ele vê que chegou uma mensagem.
-* **Efeito:** No meu caso, ele apenas imprime os logs. No mundo real, ele enviaria e-mails, notificaria o banco central, atualizaria relatórios de BI, etc.
+* **Onde:** `bases/balances-api` (Consumer).
+* **Ação:** Ele deserializa o evento `BalanceUpdated`.
+* **Efeito:** Ele atualiza a tabela `balances` no banco dedicado. Isso permite que o saldo seja consultado rapidamente sem sobrecarregar o banco principal de transações.
 
 ### Por que eu escolhi separar assim?
 
-Se o passo **4 (Worker)** falhar (ex: serviço de e-mail fora do ar), a transação **não é cancelada**. O dinheiro já foi transferido no passo **2**. O Worker apenas tenta processar o evento novamente mais tarde. Isso torna o sistema muito mais resiliente a falhas externas.
+Se o passo **4** falhar (ex: serviço de Balances fora do ar), a transação **não é cancelada**. O dinheiro já foi movido no passo **2**. O Consumers apenas reprocessa o evento quando o serviço voltar. Isso garante **Alta Disponibilidade** para a Wallet.
+
+
 
 ---
 

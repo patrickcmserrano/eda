@@ -2,14 +2,48 @@
   (:require [br.com.eda.wallet-api.handlers :as h]
             [br.com.eda.database.interface :as db]
             [br.com.eda.kafka.interface :as kafka]
+            [br.com.eda.client.interface :as client]
+            [br.com.eda.account.interface :as account]
+            [br.com.eda.transaction.interface :as transaction]
             [reitit.ring :as ring]
             [reitit.ring.middleware.muuntaja :as muuntaja]
             [muuntaja.core :as m]
             [ring.adapter.jetty :as jetty]
             [nrepl.server :refer [start-server stop-server]])
-  (:gen-class)) ;; Necessário para gerar o .jar executável
+  (:gen-class))
 
-;; Configuração do JSON (Snake Case <-> Keywords)
+;; --- SEEDING (AUTO-POPULATE) ---
+
+(defn seed! [ds kp]
+  (let [clients (client/list-all ds)]
+    (if (empty? clients)
+      (do
+        (println ">>> [SEED] Banco vazio. Populando dados fictícios...")
+        (try
+          ;; 1. Criar Clientes
+          (let [c1 (client/create-client! ds {:name "Matrix Neo" :email "neo@seed.com"})
+                c2 (client/create-client! ds {:name "Trinity"    :email "trinity@seed.com"})]
+
+            ;; 2. Criar Contas
+            (let [a1 (account/create-account! ds {:client-id (:id c1)})
+                  a2 (account/create-account! ds {:client-id (:id c2)})]
+
+              ;; 3. Creditar Conta 1 (Saldo Inicial)
+              (account/credit! ds (:id a1) 1000)
+
+              ;; 4. Transferir para Conta 2 (Gera Evento -> Balance Service)
+              (transaction/create-transaction! {:datasource ds :kafka-producer kp}
+                                               {:account-id-from (:id a1)
+                                                :account-id-to   (:id a2)
+                                                :amount          100})
+
+              (println ">>> [SEED] Dados populados com sucesso!")))
+          (catch Exception e
+            (println "!!! [SEED] Erro ao popular dados:" (.getMessage e)))))
+
+      (println ">>> [SEED] Banco já contém dados. Pulando seed."))))
+
+;; --- Configuração do JSON ---
 (def muuntaja-instance
   (m/create m/default-options))
 
@@ -23,17 +57,17 @@
 
      ;; Clients
      ["/clients" {:post (h/create-client ds)
-                  :get  (h/list-clients ds)}] ;; <--- NOVO
+                  :get  (h/list-clients ds)}]
 
      ;; Accounts
      ["/accounts" {:post (h/create-account ds)
-                   :get  (h/list-accounts ds)}] ;; <--- NOVO
+                   :get  (h/list-accounts ds)}]
 
      ["/accounts/:id/balance" {:get (h/get-balance ds)}]
      ["/accounts/:id/credit"  {:post (h/credit-account ds)}]
 
-     ;; Extrato (Transactions History)
-     ["/accounts/:id/transactions" {:get (h/get-statement ds)}] ;; <--- NOVO
+     ;; Extrato
+     ["/accounts/:id/transactions" {:get (h/get-statement ds)}]
 
      ;; Transactions
      ["/transactions" {:post (h/create-transaction {:datasource     ds
@@ -42,13 +76,9 @@
     {:data {:muuntaja   muuntaja-instance
             :middleware [muuntaja/format-middleware]}})))
 
-
-
-;; --- Funções de Ciclo de Vida (Start/Stop) ---
+;; --- Start/Stop ---
 
 (defn start-server!
-  "Inicia o servidor e salva a instância no atom.
-   Se join? for false, não bloqueia o REPL."
   [& {:keys [port join? db-config kafka-config]
       :or {port 8080 join? false db-config {} kafka-config {}}}]
 
@@ -59,6 +89,12 @@
 
       (println ">>> Servidor iniciado na porta" port "🚀")
 
+      ;; 1. Run Migrations (Garante tabelas criadas)
+      (db/migrate! ds)
+
+      ;; 2. Run Seed (Popula dados iniciais se vazio)
+      (seed! ds kp)
+
       (let [instance (jetty/run-jetty (app ds kp) {:port port :join? join?})]
         (reset! server-ref instance)))))
 
@@ -67,7 +103,6 @@
 (defonce nrepl-ref (atom nil))
 
 (defn start-nrepl!
-  "Inicia o servidor nREPL na porta especificada."
   [& {:keys [port] :or {port 7000}}]
   (if @nrepl-ref
     (println "⚠️ nREPL já está rodando!")
@@ -95,16 +130,16 @@
   (stop-server!)
   (start-server!))
 
-;; --- Entrypoint (Docker/Produção) ---
+;; --- Entrypoint ---
 
 (defn -main [& _args]
-  (let [db-config {:host     (System/getenv "DB_HOST")
-                   :port     (some-> (System/getenv "DB_PORT") (Integer/parseInt))
-                   :user     (System/getenv "DB_USER")
-                   :password (System/getenv "DB_PASS")
-                   :dbname   (System/getenv "DB_NAME")}
+  (let [db-config    {:host     (System/getenv "DB_HOST")
+                      :port     (some-> (System/getenv "DB_PORT") (Integer/parseInt))
+                      :user     (System/getenv "DB_USER")
+                      :password (System/getenv "DB_PASS")
+                      :dbname   (System/getenv "DB_NAME")}
         kafka-config {:bootstrap-servers (System/getenv "KAFKA_BOOTSTRAP_SERVERS")}
-        port (some-> (System/getenv "APP_PORT") (Integer/parseInt))]
+        port         (some-> (System/getenv "APP_PORT") (Integer/parseInt))]
 
     (start-nrepl!)
     ;; Em produção, queremos join? true para manter o container vivo

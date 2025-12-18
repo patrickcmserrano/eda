@@ -109,6 +109,52 @@ services:
       timeout: 5s
       retries: 5
 
+  # -------------------------------------------------------------------------
+  # BALANCES SERVICE
+  # -------------------------------------------------------------------------
+  balances-app:
+    container_name: balances-api
+    build: .
+    ports:
+      - "3003:3003"
+    environment:
+      DB_HOST: balances-db
+      DB_PORT: 5432
+      DB_USER: root
+      DB_PASS: root
+      DB_NAME: balances
+      APP_PORT: 3003
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      kafka:
+        condition: service_started
+      balances-db:
+        condition: service_healthy
+    networks:
+      - eda-network
+    working_dir: /app/projects/balances
+    command: [ "clojure", "-M", "-m", "br.com.eda.balances-api.core" ]
+
+  balances-db:
+    image: postgres:15-alpine
+    container_name: balances-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: balances
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./.docker/balances-postgres-data:/var/lib/postgresql/data
+    networks:
+      - eda-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U root -d balances" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   eda-network:
     driver: bridge

@@ -1,0 +1,4 @@
+{:paths     ["src" "resources"]
+ :mvn/repos {"confluent" {:url "https://packages.confluent.io/maven/"}}
+ :deps      {br.com.eda/balances-api        {:local/root "../../bases/balances-api"}
+             ch.qos.logback/logback-classic {:mvn/version "1.4.11"}}}
